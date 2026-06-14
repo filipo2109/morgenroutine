@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Morgenroutine">
+<meta name="theme-color" content="#0d0d0f">
+<title>Morgenroutine</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+  :root {
+    --bg: #0d0d0f;
+    --surface: #16161a;
+    --surface2: #1e1e24;
+    --accent: #e8ff47;
+    --accent-dim: rgba(232,255,71,0.12);
+    --text: #f0f0f0;
+    --text-muted: #6b6b7a;
+    --green: #4dff91;
+    --red: #ff4d6d;
+    --border: rgba(255,255,255,0.07);
+    --radius: 16px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: max(40px, env(safe-area-inset-top)) 18px max(80px, env(safe-area-inset-bottom));
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* HEADER */
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 28px;
+  }
+  .header-left h1 {
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+  }
+  .header-left h1 span { color: var(--accent); }
+  .date-badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+  }
+  .streak-box {
+    background: var(--accent-dim);
+    border: 1px solid rgba(232,255,71,0.25);
+    border-radius: 12px;
+    padding: 12px 18px;
+    text-align: center;
+    min-width: 76px;
+  }
+  .streak-box .streak-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .streak-box .streak-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 4px;
+  }
+
+  /* PROGRESS */
+  .progress-section { margin-bottom: 28px; }
+  .progress-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--text-muted);
+    font-family: 'Space Mono', monospace;
+    margin-bottom: 10px;
+  }
+  .progress-meta .pct { color: var(--accent); font-weight: 700; }
+  .progress-track {
+    height: 8px;
+    background: var(--surface2);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent) 0%, #b4ff00 100%);
+    border-radius: 99px;
+    transition: width 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    width: 0%;
+  }
+
+  /* TASKS */
+  .tasks-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
+
+  .task-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    transition: background 0.18s, border-color 0.18s, transform 0.12s;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 76px;
+  }
+  .task-item:active { transform: scale(0.97); background: var(--surface2); }
+  .task-item.done {
+    background: rgba(77,255,145,0.06);
+    border-color: rgba(77,255,145,0.22);
+  }
+  .task-item.done .task-name { color: var(--text-muted); text-decoration: line-through; }
+
+  .checkbox {
+    width: 30px; height: 30px;
+    border-radius: 9px;
+    border: 2px solid #444;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.18s, border-color 0.18s;
+    font-size: 16px;
+  }
+  .task-item.done .checkbox {
+    background: var(--green);
+    border-color: var(--green);
+  }
+
+  .task-emoji { font-size: 26px; flex-shrink: 0; }
+  .task-info { flex: 1; min-width: 0; }
+  .task-name { font-size: 17px; font-weight: 600; transition: color 0.2s; }
+  .task-sub { font-size: 13px; color: var(--text-muted); margin-top: 3px; line-height: 1.4; }
+
+  /* SECTION TITLE */
+  .section-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    margin-bottom: 14px;
+  }
+
+  /* COMPLETE BANNER */
+  .complete-banner {
+    background: linear-gradient(135deg, rgba(77,255,145,0.12), rgba(232,255,71,0.08));
+    border: 1px solid rgba(77,255,145,0.3);
+    border-radius: var(--radius);
+    padding: 24px 20px;
+    text-align: center;
+    margin-bottom: 28px;
+    display: none;
+  }
+  .complete-banner.show { display: block; }
+  .complete-banner .big-emoji { font-size: 42px; margin-bottom: 10px; }
+  .complete-banner h2 { font-size: 20px; font-weight: 700; color: var(--green); }
+  .complete-banner p { font-size: 14px; color: var(--text-muted); margin-top: 5px; }
+
+  /* HISTORY */
+  .history-section { margin-bottom: 32px; }
+  .history-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 7px;
+  }
+  .history-day {
+    aspect-ratio: 1;
+    border-radius: 9px;
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    flex-direction: column;
+    gap: 2px;
+    cursor: default;
+  }
+  .history-day.full { background: rgba(77,255,145,0.18); color: var(--green); }
+  .history-day.partial { background: rgba(232,255,71,0.12); color: var(--accent); }
+  .history-day.missed { background: rgba(255,77,109,0.1); color: var(--red); }
+  .history-day .day-label { font-size: 8px; opacity: 0.7; }
+
+  /* MANAGE */
+  .manage-section { margin-bottom: 28px; }
+  .add-form { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .add-input {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 14px;
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+  .add-input:focus { border-color: rgba(232,255,71,0.4); }
+  .add-input::placeholder { color: var(--text-muted); }
+  .emoji-input { width: 56px; text-align: center; font-size: 20px; flex-shrink: 0; }
+  .name-input { flex: 1; min-width: 120px; }
+  .sub-input { width: 100%; font-size: 14px; }
+  .btn {
+    background: var(--accent);
+    color: #0d0d0f;
+    border: none;
+    border-radius: 12px;
+    padding: 14px 20px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.12s;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn:active { transform: scale(0.95); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--red);
+    border: 1px solid rgba(255,77,109,0.3);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: 'Space Grotesk', sans-serif;
+    transition: background 0.2s;
+    -webkit-tap-highlight-color: transparent;
+    white-space: nowrap;
+  }
+  .btn-ghost:active { background: rgba(255,77,109,0.1); }
+  .manage-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    background: var(--surface);
+    border-radius: 12px;
+    margin-bottom: 8px;
+    font-size: 16px;
+    border: 1px solid var(--border);
+  }
+  .manage-item span { flex: 1; }
+  .reset-note {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: center;
+    font-family: 'Space Mono', monospace;
+    margin-top: 14px;
+    line-height: 1.6;
+  }
+  .toggle-manage {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text-muted);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px;
+    padding: 16px;
+    cursor: pointer;
+    width: 100%;
+    margin-bottom: 16px;
+    transition: border-color 0.2s, color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .toggle-manage:active { border-color: var(--accent); color: var(--accent); }
+</style>
+</head>
+<body>
+<div style="max-width:480px;margin:0 auto;">
+
+  <div class="header">
+    <div class="header-left">
+      <h1>Morgen<span>routine.</span></h1>
+      <div class="date-badge" id="dateLabel">—</div>
+    </div>
+    <div class="streak-box">
+      <div class="streak-num" id="streakNum">0</div>
+      <div class="streak-label">🔥 Streak</div>
+    </div>
+  </div>
+
+  <div class="complete-banner" id="completeBanner">
+    <div class="big-emoji">🏆</div>
+    <h2>Morgenroutine abgeschlossen!</h2>
+    <p>Stark. Heute hast du alles durchgezogen.</p>
+  </div>
+
+  <div class="progress-section">
+    <div class="progress-meta">
+      <span>Heutiger Fortschritt</span>
+      <span class="pct" id="pctLabel">0%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+  </div>
+
+  <div class="section-title">Heute</div>
+  <div class="tasks-list" id="tasksList"></div>
+
+  <div class="history-section">
+    <div class="section-title">Letzte 14 Tage</div>
+    <div class="history-grid" id="historyGrid"></div>
+  </div>
+
+  <button class="toggle-manage" id="toggleManageBtn" onclick="toggleManage()">⚙ Aufgaben bearbeiten</button>
+  <div class="manage-section" id="manageSection" style="display:none;">
+    <div class="section-title">Aufgaben verwalten</div>
+    <div class="add-form">
+      <input class="add-input emoji-input" id="emojiInput" maxlength="2" placeholder="🌅">
+      <input class="add-input name-input" id="nameInput" placeholder="Neue Aufgabe...">
+      <button class="btn" onclick="addTask()">+</button>
+      <input class="add-input sub-input" id="subInput" placeholder="Kurze Beschreibung (optional)">
+    </div>
+    <div id="manageList"></div>
+    <div class="reset-note">Aufgaben werden täglich automatisch zurückgesetzt.</div>
+  </div>
+
+</div>
+
+<script>
+const TASKS_KEY = 'mr_tasks_v5';
+const HISTORY_KEY = 'mr_history_v2';
+const TODAY_KEY = 'mr_today_v5';
+
+const DEFAULT_TASKS = [
+  { id: 1, emoji: '🛏️', name: 'Bett machen',                     sub: 'Direkt nach dem Aufstehen — erster Sieg des Tages' },
+  { id: 2, emoji: '🤲', name: 'Beten / Glaubenssätze',            sub: 'Dankbarkeit, Affirmationen & Fokus für den Tag' },
+  { id: 3, emoji: '💧', name: 'Wasser trinken',                   sub: '500ml auf nüchternen Magen' },
+  { id: 4, emoji: '🚿', name: 'Kalt duschen',                     sub: 'Zumindest die letzten 30 Sek. kalt — Willenskraft trainieren' },
+  { id: 5, emoji: '🏋️', name: 'Training / Bewegung',             sub: 'Gym, Sport oder 10 Min. Körpergewicht' },
+  { id: 6, emoji: '🥚', name: 'Frühstück vorbereiten',            sub: 'Protein-reich — Eier, Quark oder Shake' },
+  { id: 7, emoji: '🎯', name: 'Top-3 Aufgaben planen',            sub: 'Was MUSS heute passieren? Aufschreiben.' },
+];
+
+function getTasks() {
+  try { return JSON.parse(localStorage.getItem(TASKS_KEY)) || DEFAULT_TASKS; } catch { return DEFAULT_TASKS; }
+}
+function saveTasks(t) { localStorage.setItem(TASKS_KEY, JSON.stringify(t)); }
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || {}; } catch { return {}; }
+}
+function saveHistory(h) { localStorage.setItem(HISTORY_KEY, JSON.stringify(h)); }
+function getTodayState() {
+  try {
+    const s = JSON.parse(localStorage.getItem(TODAY_KEY)) || {};
+    if (s.date !== todayStr()) return { date: todayStr(), checked: {} };
+    return s;
+  } catch { return { date: todayStr(), checked: {} }; }
+}
+function saveTodayState(s) { localStorage.setItem(TODAY_KEY, JSON.stringify(s)); }
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function render() {
+  const tasks = getTasks();
+  const todayState = getTodayState();
+  const checked = todayState.checked;
+
+  const d = new Date();
+  const days = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+  const months = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+  document.getElementById('dateLabel').textContent =
+    `${days[d.getDay()]}, ${d.getDate()}. ${months[d.getMonth()]} ${d.getFullYear()}`;
+
+  const list = document.getElementById('tasksList');
+  list.innerHTML = '';
+  tasks.forEach(t => {
+    const done = !!checked[t.id];
+    const el = document.createElement('div');
+    el.className = 'task-item' + (done ? ' done' : '');
+    el.innerHTML = `
+      <div class="checkbox">${done ? '✓' : ''}</div>
+      <div class="task-emoji">${t.emoji}</div>
+      <div class="task-info">
+        <div class="task-name">${t.name}</div>
+        ${t.sub ? `<div class="task-sub">${t.sub}</div>` : ''}
+      </div>
+    `;
+    el.addEventListener('click', () => toggle(t.id));
+    list.appendChild(el);
+  });
+
+  const total = tasks.length;
+  const done = Object.values(checked).filter(Boolean).length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('pctLabel').textContent = pct + '%';
+
+  const banner = document.getElementById('completeBanner');
+  if (done === total && total > 0) banner.classList.add('show');
+  else banner.classList.remove('show');
+
+  const h = getHistory();
+  h[todayStr()] = { done, total };
+  saveHistory(h);
+  document.getElementById('streakNum').textContent = calcStreak(h);
+  renderHistory(h);
+  renderManage(tasks);
+}
+
+function toggle(id) {
+  const s = getTodayState();
+  s.checked[id] = !s.checked[id];
+  saveTodayState(s);
+  render();
+}
+
+function calcStreak(h) {
+  let streak = 0;
+  const d = new Date();
+  const todayEntry = h[todayStr()];
+  let startOffset = (todayEntry && todayEntry.done === todayEntry.total && todayEntry.total > 0) ? 0 : 1;
+  for (let i = startOffset; i < 365; i++) {
+    const dd = new Date(d);
+    dd.setDate(dd.getDate() - i);
+    const key = `${dd.getFullYear()}-${String(dd.getMonth()+1).padStart(2,'0')}-${String(dd.getDate()).padStart(2,'0')}`;
+    const entry = h[key];
+    if (entry && entry.done === entry.total && entry.total > 0) streak++;
+    else if (i > startOffset) break;
+  }
+  if (todayEntry && todayEntry.done === todayEntry.total && todayEntry.total > 0) streak++;
+  return streak;
+}
+
+function renderHistory(h) {
+  const grid = document.getElementById('historyGrid');
+  grid.innerHTML = '';
+  const weekDays = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+  for (let i = 13; i >= 0; i--) {
+    const dd = new Date();
+    dd.setDate(dd.getDate() - i);
+    const key = `${dd.getFullYear()}-${String(dd.getMonth()+1).padStart(2,'0')}-${String(dd.getDate()).padStart(2,'0')}`;
+    const entry = h[key];
+    const el = document.createElement('div');
+    el.className = 'history-day';
+    const dayName = weekDays[(dd.getDay() + 6) % 7];
+    if (entry && entry.total > 0) {
+      const ratio = entry.done / entry.total;
+      if (ratio === 1) el.classList.add('full');
+      else if (ratio >= 0.5) el.classList.add('partial');
+      else el.classList.add('missed');
+    }
+    el.innerHTML = `<div class="day-label">${dayName}</div><div style="font-size:11px;font-weight:700;">${dd.getDate()}</div>`;
+    el.title = entry ? `${entry.done}/${entry.total} erledigt` : 'Keine Daten';
+    grid.appendChild(el);
+  }
+}
+
+function renderManage(tasks) {
+  const list = document.getElementById('manageList');
+  list.innerHTML = '';
+  tasks.forEach(t => {
+    const el = document.createElement('div');
+    el.className = 'manage-item';
+    el.innerHTML = `<span>${t.emoji} ${t.name}</span><button class="btn-ghost" onclick="removeTask(${t.id})">Löschen</button>`;
+    list.appendChild(el);
+  });
+}
+
+function addTask() {
+  const emoji = document.getElementById('emojiInput').value.trim() || '✅';
+  const name = document.getElementById('nameInput').value.trim();
+  const sub = document.getElementById('subInput').value.trim();
+  if (!name) return;
+  const tasks = getTasks();
+  tasks.push({ id: Date.now(), emoji, name, sub });
+  saveTasks(tasks);
+  document.getElementById('emojiInput').value = '';
+  document.getElementById('nameInput').value = '';
+  document.getElementById('subInput').value = '';
+  render();
+}
+
+function removeTask(id) {
+  let tasks = getTasks().filter(t => t.id !== id);
+  saveTasks(tasks);
+  const s = getTodayState();
+  delete s.checked[id];
+  saveTodayState(s);
+  render();
+}
+
+function toggleManage() {
+  const sec = document.getElementById('manageSection');
+  const btn = document.getElementById('toggleManageBtn');
+  const open = sec.style.display === 'none';
+  sec.style.display = open ? 'block' : 'none';
+  btn.textContent = open ? '✕ Schließen' : '⚙ Aufgaben bearbeiten';
+}
+
+render();
+</script>
+</body>
+</html>
